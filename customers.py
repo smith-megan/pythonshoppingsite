@@ -30,12 +30,12 @@ def read_customers_from_file(filepath):
             ) = line.strip().split("|")
             customers[email]=Customer(first_name,
                                     last_name,
-                                    password,
-                                    email)
+                                    email,
+                                    password)
     print(customers)
     return customers
 
-def get_customer_id(customer_email):
+def get_customer_by_email(customer_email):
     return customer_list[customer_email]
 
 customer_list = read_customers_from_file("customers.txt")

@@ -133,17 +133,26 @@ def process_login():
     """
     form_email=request.form.get('email')
     form_password=request.form.get('password')
-    checked=customers.get_by_email(form_email)
+    checked=customers.get_customer_by_email(form_email)
     if not checked:
         flash("doesn't exist")
         return redirect('/login') 
-    if checked.password !=form_password:
+
+    if checked.password != form_password:
+        
         flash("doesn't match up")
         return redirect('/login')
+
     session["logged_in_customer_email"]=checked.email
     flash("logged in")
     return redirect('/melons')
 
+
+@app.route("/logout", methods=["GET"])
+def process_logout():
+    del session["logged_in_customer_email"]
+    flash("logged out")
+    return redirect('/login')
 
 @app.route("/checkout")
 def checkout():
