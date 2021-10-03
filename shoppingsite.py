@@ -6,15 +6,16 @@ put melons in a shopping cart.
 Authors: Joel Burton, Christian Fernandez, Meggie Mahnken, Katie Byers.
 """
 
-from flask import Flask, render_template, redirect, flash
+from flask import Flask, render_template, redirect, flash, session, request
 import jinja2
 
 import melons
+import customers
 
 app = Flask(__name__)
 
 # A secret key is needed to use Flask sessioning features
-app.secret_key = 'this-should-be-something-unguessable'
+app.secret_key = '333-444-555-444-333-222-111-!!!-@@@-###-$$$'
 
 # Normally, if you refer to an undefined variable in a Jinja template,
 # Jinja silently ignores this. This makes debugging difficult, so we'll
@@ -54,13 +55,21 @@ def show_melon(melon_id):
     return render_template("melon_details.html",
                            display_melon=melon)
 
-
 @app.route("/cart")
 def show_shopping_cart():
     """Display content of shopping cart."""
-
+    
+    order_total=0
+    cart_melons=[]
+    cart=session.get("cart",{})
     # TODO: Display the contents of the shopping cart.
-
+    for melon_id, quantity in cart.items():
+        melon=melons.get_by_id(melon_id)
+        total_cost= quantity * melon.price
+        order_total+=total_cost
+        melon.quantity=quantity
+        melon.total_cost=total_cost
+        cart_melons.append(melon)
     # The logic here will be something like:
     #
     # - get the cart dictionary from the session
@@ -77,17 +86,24 @@ def show_shopping_cart():
     # Make sure your function can also handle the case wherein no cart has
     # been added to the session
 
-    return render_template("cart.html")
+    return render_template("cart.html", cart=cart_melons, order_total=order_total)
 
 
 @app.route("/add_to_cart/<melon_id>")
 def add_to_cart(melon_id):
     """Add a melon to cart and redirect to shopping cart page.
-
+    
     When a melon is added to the cart, redirect browser to the shopping cart
     page and display a confirmation message: 'Melon successfully added to
     cart'."""
-
+    if 'cart' in session:
+        cart=session["cart"]
+    else:
+        cart=session["cart"]={}
+    
+    cart[melon_id]=cart.get(melon_id, 0) +1
+    print(session['cart'])
+    flash("melon in cart")
     # TODO: Finish shopping cart functionality
 
     # The logic here should be something like:
@@ -98,8 +114,7 @@ def add_to_cart(melon_id):
     # - increment the count for that melon id by 1
     # - flash a success message
     # - redirect the user to the cart page
-
-    return "Oops! This needs to be implemented!"
+    return redirect("/cart")
 
 
 @app.route("/login", methods=["GET"])
@@ -116,22 +131,18 @@ def process_login():
     Find the user's login credentials located in the 'request.form'
     dictionary, look up the user, and store them in the session.
     """
-
-    # TODO: Need to implement this!
-
-    # The logic here should be something like:
-    #
-    # - get user-provided name and password from request.form
-    # - use customers.get_by_email() to retrieve corresponding Customer
-    #   object (if any)
-    # - if a Customer with that email was found, check the provided password
-    #   against the stored one
-    # - if they match, store the user's email in the session, flash a success
-    #   message and redirect the user to the "/melons" route
-    # - if they don't, flash a failure message and redirect back to "/login"
-    # - do the same if a Customer with that email doesn't exist
-
-    return "Oops! This needs to be implemented"
+    form_email=request.form.get('email')
+    form_password=request.form.get('password')
+    checked=customers.get_by_email(form_email)
+    if not checked:
+        flash("doesn't exist")
+        return redirect('/login') 
+    if checked.password !=form_password:
+        flash("doesn't match up")
+        return redirect('/login')
+    session["logged_in_customer_email"]=checked.email
+    flash("logged in")
+    return redirect('/melons')
 
 
 @app.route("/checkout")
